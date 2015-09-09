@@ -1,0 +1,50 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+using System;
+
+namespace Curryfy
+{
+	public static class CurryExtensions
+    {<# 
+	
+	var types = new Stack<string>(new string[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q" });
+	
+	var openBracket = "\t\t{";
+	var closeBracket = "\t\t}";
+
+	//Remove until only A and B are left in the stack
+	var methodCount = types.Count - 2;
+	for(int i = 0; i < methodCount; i++)
+	{
+		var reversedTypes = types.Reverse();
+
+		var genericArgs = string.Join(", ", reversedTypes);
+		var curryType = types.Aggregate(types.Pop(), (accumulator, type) => "Func<" + type + ", " + accumulator + ">");
+		
+		var args = string.Join(", ", reversedTypes).ToLower();
+		
+		var currySignature = string.Format("\n\t\tpublic static {0} Curry<{1}>(this Func<{1}> self)", curryType, genericArgs);
+		var curryCall = "self(" + args +  ");";
+		var curryBody = "\t\t\treturn " + types.Aggregate(curryCall, (accumulator, type) => string.Format("{0} => {1}", type.ToLower(), accumulator));
+		
+		WriteLine(currySignature);
+		WriteLine(openBracket);
+		WriteLine(curryBody);
+		WriteLine(closeBracket);
+		
+		var uncurrySignature = string.Format("\n\t\tpublic static Func<{1}> Uncurry<{1}>(this {0} self)", curryType, genericArgs);
+		var uncurryCall = reversedTypes.Aggregate("self", (accumulator, type) => string.Format("{0}({1})", accumulator, type.ToLower()));
+		var uncurryBody = "\t\t\treturn (" + args + ") => " + uncurryCall + ";";
+
+		WriteLine(uncurrySignature);
+		WriteLine(openBracket);
+		WriteLine(uncurryBody);
+		WriteLine(closeBracket);
+	}
+#>
+	}
+}
